@@ -26,16 +26,29 @@ An autonomous overnight research utility that runs on local LLMs, designed for m
    cd researchbot
    ```
 
-2. **Set up virtual environment**
+2. **Install uv** (if not already installed)
    ```bash
-   python -m venv venv
-   source venv/bin/activate
+   # Using Homebrew (recommended for macOS)
+   brew install uv
+   
+   # Or using pipx
+   pipx install uv
    ```
 
-3. **Install dependencies**
+3. **Set up virtual environment**
    ```bash
-   pip install -r requirements.txt
+   # Create and activate virtual environment
+   uv venv
+   source .venv/bin/activate  # On macOS/Linux
+   # Or on Windows: .venv\Scripts\activate
    ```
+
+4. **Install dependencies**
+   ```bash
+   uv pip install -r requirements.txt
+   ```
+   
+   > 💡 Tip: For even faster dependency resolution, use `uv pip compile` to generate a locked requirements file first.
 
 4. **Set up environment variables**
    Create a `.env` file:
