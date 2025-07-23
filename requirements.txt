@@ -1,7 +1,30 @@
-python-dotenv==1.0.0
-requests==2.31.0
-schedule==1.2.1
-loguru==0.7.2
-pandas==2.1.0
-numpy==1.24.3
-pydantic==2.5.1
+# Core Dependencies
+python-dotenv>=1.0.0
+loguru>=0.7.2
+schedule>=1.2.1
+pydantic>=2.5.1
+
+# LLM & Vector DB
+openai>=1.30.0  # For LM Studio/Ollama API compatibility
+chromadb>=0.4.24  # Vector database
+sentence-transformers>=2.2.2  # For embeddings
+
+# Search & Web
+requests>=2.31.0
+aiohttp>=3.9.0  # Async HTTP client
+duckduckgo-search>=4.1.1  # Web search
+beautifulsoup4>=4.12.2  # HTML parsing
+
+# Local MLX (Apple Silicon)
+mlx>=0.0.6  # MLX backend
+mlx-lm>=0.1.0  # MLX language models
+
+# Utilities
+tqdm>=4.66.1  # Progress bars
+python-magic>=0.4.27  # File type detection
+
+# Development
+black>=24.3.0  # Code formatting
+mypy>=1.7.0  # Type checking
+pytest>=7.4.0  # Testing
+pytest-asyncio>=0.21.1  # Async test support
