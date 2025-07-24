@@ -50,19 +50,28 @@ An autonomous overnight research utility that runs on local LLMs, designed for m
    
    > 💡 Tip: For even faster dependency resolution, use `uv pip compile` to generate a locked requirements file first.
 
-4. **Set up environment variables**
-   Create a `.env` file:
-   ```env
-   # Required
-   RESEARCH_TOPIC="Your default research topic"
-   
-   # Optional overrides
-   USE_LMSTUDIO=1  # Set to 0 to use mlx-lm directly
-   MODEL="phi-3-mini"  # Default model
-   OPENAI_BASE_URL=""  # Set to Ollama server if using remote
+4. **Set the Research Prompt**
+   Edit the `Directives.json` file in the project root to define your research goal:
+   ```json
+   {
+     "Prompt": "Explore the latest advancements in on-device AI..."
+   }
    ```
 
-5. **Download models**
+5. **Set up Environment Variables (Optional)**
+   Create a `.env` file for API keys and other settings:
+   ```env
+   # Optional: For SerpAPI search provider
+   # SERPAPI_API_KEY="your_serpapi_key"
+
+   # Optional: To use a remote Ollama server
+   # OPENAI_BASE_URL="http://<your-ollama-server-ip>:11434/v1"
+
+   # Optional: To use local mlx-lm directly instead of LM Studio
+   # USE_LMSTUDIO=0
+   ```
+
+6. **Download models**
    - For LM Studio: Download and load your preferred model (see [Model Configuration](#model-configuration))
    - For Ollama: `ollama pull phi3:mini`
 
@@ -70,11 +79,11 @@ An autonomous overnight research utility that runs on local LLMs, designed for m
 
 ### Supported Models
 
-| Model | Parameters | Quantization | RAM Usage | Tokens/s (M3 Pro) |
-|-------|------------|--------------|-----------|-------------------|
-| phi-3-mini | 3.8B | Q4_K_M | ~4GB | ~25 |
-| gemma-7b-it | 7B | Q4 | ~6GB | ~16-18 |
-| mistral-7b-instruct | 7B | Q4 | ~6GB | ~15 |
+| Model             | Parameters | Quantization | RAM Usage | Tokens/s (M3 Pro) |
+|-------------------|------------|--------------|-----------|-------------------|
+| phi-3-mini        | 3.8B       | Q4_K_M       | ~4GB      | ~25               |
+| gemma-7b-it       | 7B         | Q4           | ~6GB      | ~16-18            |
+| mistral-7b-instruct | 7B         | Q4           | ~6GB      | ~15               |
 
 ### Recommended Settings
 - Context window: 4096 tokens
@@ -84,9 +93,11 @@ An autonomous overnight research utility that runs on local LLMs, designed for m
 ## Usage
 
 ### Manual Execution
+To run the bot manually for a single research cycle:
 ```bash
-python src/orchestrator.py "Your research topic"
+python -m src.main
 ```
+The bot will read its instructions from `Directives.json` and execute one research cycle.
 
 ### Scheduled Execution
 1. Copy the launchd plist to your LaunchAgents directory:

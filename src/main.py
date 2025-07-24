@@ -1,8 +1,3 @@
-"""
-ResearchBot - An autonomous overnight research utility.
-
-This module provides the main entry point for the ResearchBot application.
-"""
 import asyncio
 import signal
 import sys
@@ -11,33 +6,40 @@ from typing import Optional
 
 from loguru import logger
 
-from .config import config
+from .config import config, Config
+from .search import SearchEngine, SearchProvider
 
 
 class ResearchBot:
     """Main ResearchBot class that orchestrates the research process."""
 
-    def __init__(self):
-        """Initialize the ResearchBot with default settings."""
+    def __init__(self, bot_config: Config):
+        """Initialize the ResearchBot with a given configuration."""
+        self.config = bot_config
         self.running = False
         self._shutdown_event = asyncio.Event()
-        
+        self.search_engine = SearchEngine(
+            provider=SearchProvider(self.config.search.provider),
+            api_key=self.config.search.api_key,
+            max_results=self.config.search.max_results
+        )
+
     async def initialize(self) -> None:
         """Initialize the bot components."""
         logger.info("Initializing ResearchBot...")
-        
+
         # Set up signal handlers for graceful shutdown
+        loop = asyncio.get_running_loop()
         for sig in (signal.SIGINT, signal.SIGTERM):
-            signal.signal(sig, self._handle_shutdown_signal)
-            
-        logger.info(f"Research topic: {config.topic}")
-        logger.info(f"Using {'LM Studio' if config.use_lmstudio else 'Ollama'} as LLM backend")
-        
-        # Initialize components here
-        # self.search = SearchEngine(config.search)
-        # self.llm = LLMClient(config.model, config.use_lmstudio, config.openai_base_url)
-        # self.storage = VectorStore(config.storage)
-        
+            loop.add_signal_handler(sig, self._handle_shutdown_signal, sig, None)
+
+        logger.info(f"Research Prompt: {self.config.prompt}")
+        logger.info(f"Using {'LM Studio' if self.config.use_lmstudio else 'Ollama'} as LLM backend")
+
+        # Initialize other components here as they are developed
+        # self.llm = LLMClient(self.config.model, self.config.use_lmstudio, self.config.openai_base_url)
+        # self.storage = VectorStore(self.config.storage)
+
         logger.info("ResearchBot initialized")
 
     async def run(self) -> None:
@@ -45,67 +47,67 @@ class ResearchBot:
         if self.running:
             logger.warning("Bot is already running")
             return
-            
+
         self.running = True
         logger.info("Starting ResearchBot...")
-        
+
         try:
             await self.initialize()
-            
+
             # Main research loop
             while self.running and not self._shutdown_event.is_set():
                 try:
-                    # Main research cycle
                     logger.info("Starting research cycle...")
-                    
-                    # 1. Search for information
-                    # search_results = await self.search.query(config.topic)
-                    # 
-                    # # 2. Process and summarize results
+
+                    # 1. Search for information based on the prompt
+                    async with self.search_engine as searcher:
+                        search_results = await searcher.search(self.config.prompt)
+
+                    if search_results:
+                        logger.info(f"Found {len(search_results)} results for the initial prompt.")
+                        for i, result in enumerate(search_results, 1):
+                            logger.info(f"  {i}. {result.title} ({result.url})")
+                    else:
+                        logger.warning("No search results found for the prompt.")
+
+                    # 2. Process and summarize results (to be implemented)
                     # for result in search_results:
-                    #     summary = await self.llm.summarize(result)
+                    #     summary = await self.llm.summarize(result.snippet)
                     #     await self.storage.store(result, summary)
-                    #     
-                    # # 3. Generate follow-up questions
-                    # questions = await self.llm.generate_questions(config.topic)
-                    # 
-                    # logger.info(f"Research cycle complete. Generated {len(questions)} follow-up questions.")
-                    
-                    # Sleep until next cycle or shutdown
-                    await asyncio.wait_for(
-                        self._shutdown_event.wait(),
-                        timeout=300  # 5 minutes between cycles
-                    )
-                    
-                except asyncio.TimeoutError:
-                    # Expected - continue to next cycle
-                    continue
+
+                    # 3. Generate follow-up questions (to be implemented)
+                    # questions = await self.llm.generate_questions(self.config.prompt)
+                    # logger.info(f"Generated {len(questions)} follow-up questions.")
+
+                    logger.info("Research cycle complete. The bot will now shut down.")
+                    # For now, we run once and exit. The loop can be adjusted for continuous operation.
+                    self.running = False
+
                 except Exception as e:
-                    logger.error(f"Error in research cycle: {e}")
-                    # Add backoff/delay on error
-                    await asyncio.sleep(60)
-                    
+                    logger.error(f"Error in research cycle: {e}", exc_info=True)
+                    self.running = False  # Stop on error
+
         except Exception as e:
-            logger.critical(f"Fatal error in main loop: {e}")
+            logger.critical(f"Fatal error in main loop: {e}", exc_info=True)
             raise
         finally:
             await self.shutdown()
 
     async def shutdown(self) -> None:
         """Shut down the bot gracefully."""
-        if not self.running:
+        if self._shutdown_event.is_set():
             return
-            
+
         logger.info("Shutting down ResearchBot...")
-        self.running = False
         self._shutdown_event.set()
-        
+        self.running = False
+
         # Clean up resources
         # if hasattr(self, 'storage'):
         #     await self.storage.close()
-            
+
         logger.info("ResearchBot shutdown complete")
-    
+
     def _handle_shutdown_signal(self, signum, frame) -> None:
         """Handle shutdown signals gracefully."""
         logger.info(f"Received shutdown signal {signal.Signals(signum).name}")
@@ -115,19 +117,24 @@ class ResearchBot:
 def main() -> int:
     """Main entry point for the ResearchBot application."""
     try:
+        # Load configuration
+        bot_config = Config.load()
         # Set up logging first
-        config.setup_logging()
-        
+        bot_config.setup_logging()
+
         # Create and run the bot
-        bot = ResearchBot()
+        bot = ResearchBot(bot_config)
         asyncio.run(bot.run())
         return 0
-        
+
+    except (FileNotFoundError, ValueError) as e:
+        logger.critical(f"Configuration error: {e}")
+        return 1
     except KeyboardInterrupt:
         logger.info("ResearchBot stopped by user")
         return 0
     except Exception as e:
-        logger.critical(f"Unhandled exception: {e}")
+        logger.critical(f"Unhandled exception: {e}", exc_info=True)
         return 1
 
 
