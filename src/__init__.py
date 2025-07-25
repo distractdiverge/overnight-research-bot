@@ -9,7 +9,7 @@ __version__ = "0.1.0"
 
 # Import key components for easier access
 from .config import config, Config
-from .search import SearchEngine, SearchProvider, SearchResult
+from .search import SearchEngine, SearchResult
 
 __all__ = [
     'config',

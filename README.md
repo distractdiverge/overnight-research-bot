@@ -58,11 +58,11 @@ An autonomous overnight research utility that runs on local LLMs, designed for m
    }
    ```
 
-5. **Set up Environment Variables (Optional)**
-   Create a `.env` file for API keys and other settings:
+5. **Set up Environment Variables**
+   Create a `.env` file and add your SerpAPI key:
    ```env
-   # Optional: For SerpAPI search provider
-   # SERPAPI_API_KEY="your_serpapi_key"
+   # Required: For SerpAPI search provider
+   SERPAPI_API_KEY="your_serpapi_key"
 
    # Optional: To use a remote Ollama server
    # OPENAI_BASE_URL="http://<your-ollama-server-ip>:11434/v1"

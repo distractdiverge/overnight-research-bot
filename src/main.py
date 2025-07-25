@@ -1,13 +1,14 @@
 import asyncio
 import signal
 import sys
-from pathlib import Path
 from typing import Optional
 
 from loguru import logger
 
-from .config import config, Config
-from .search import SearchEngine, SearchProvider
+from .config import Config
+from .config import Config
+from .llm import LLMFactory, LLM
+from .search import SearchEngine
 
 
 class ResearchBot:
@@ -19,10 +20,10 @@ class ResearchBot:
         self.running = False
         self._shutdown_event = asyncio.Event()
         self.search_engine = SearchEngine(
-            provider=SearchProvider(self.config.search.provider),
             api_key=self.config.search.api_key,
             max_results=self.config.search.max_results
         )
+        self.llm: Optional[LLM] = None
 
     async def initialize(self) -> None:
         """Initialize the bot components."""
@@ -37,7 +38,7 @@ class ResearchBot:
         logger.info(f"Using {'LM Studio' if self.config.use_lmstudio else 'Ollama'} as LLM backend")
 
         # Initialize other components here as they are developed
-        # self.llm = LLMClient(self.config.model, self.config.use_lmstudio, self.config.openai_base_url)
+        self.llm = LLMFactory.create_llm(self.config)
         # self.storage = VectorStore(self.config.storage)
 
         logger.info("ResearchBot initialized")
@@ -70,14 +71,30 @@ class ResearchBot:
                     else:
                         logger.warning("No search results found for the prompt.")
 
-                    # 2. Process and summarize results (to be implemented)
-                    # for result in search_results:
-                    #     summary = await self.llm.summarize(result.snippet)
-                    #     await self.storage.store(result, summary)
+                    # 2. Process and summarize results
+                    if self.llm and search_results:
+                        logger.info("Summarizing search results...")
+                        summaries = []
+                        for result in search_results:
+                            if result.snippet:
+                                try:
+                                    summary = await self.llm.summarize(
+                                        text=result.snippet,
+                                        context=self.config.prompt
+                                    )
+                                    summaries.append(summary)
+                                    logger.info(f"  - Summary for '{result.title}': {summary[:100]}...")
+                                except Exception as e:
+                                    logger.error(f"Could not summarize '{result.title}': {e}")
+                            else:
+                                logger.warning(f"Skipping result with no snippet: {result.title}")
+                        # await self.storage.store(search_results, summaries)
+
 
                     # 3. Generate follow-up questions (to be implemented)
-                    # questions = await self.llm.generate_questions(self.config.prompt)
-                    # logger.info(f"Generated {len(questions)} follow-up questions.")
+                    # if self.llm:
+                    #     questions = await self.llm.generate_questions(self.config.prompt)
+                    #     logger.info(f"Generated {len(questions)} follow-up questions.")
 
                     logger.info("Research cycle complete. The bot will now shut down.")
                     # For now, we run once and exit. The loop can be adjusted for continuous operation.

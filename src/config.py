@@ -19,7 +19,7 @@ class ModelConfig(BaseModel):
 
 class SearchConfig(BaseModel):
     """Configuration for web search."""
-    provider: Literal["duckduckgo", "serpapi"] = "duckduckgo"
+    provider: Literal["serpapi"] = "serpapi"
     max_results: int = 10
     api_key: Optional[str] = None
     model_config = ConfigDict(extra='forbid')
@@ -79,7 +79,7 @@ class Config(BaseModel):
                 'name': os.getenv('MODEL', 'phi-3-mini'),
             },
             'search': {
-                'provider': os.getenv('SEARCH_PROVIDER', 'duckduckgo'),
+                'provider': os.getenv('SEARCH_PROVIDER', 'serpapi'),
                 'api_key': os.getenv('SERPAPI_API_KEY'),
             },
             'logging': {
